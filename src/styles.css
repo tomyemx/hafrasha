@@ -147,11 +147,14 @@ select:focus, input:focus { outline: none; border-color: var(--green); }
 .step {
   position: relative;
   border: 1px solid var(--line);
+  border-inline-start: 4px solid var(--green);
   border-radius: 14px;
   padding: 14px 16px 14px 14px;
   margin-top: 12px;
   background: #fff;
 }
+.step.bracha, .step.declaration { border-inline-start-color: var(--gold); }
+.step.done { border-inline-start-color: var(--green-d); }
 .step .head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
 .step .badge {
   width: 26px; height: 26px; flex: 0 0 auto;

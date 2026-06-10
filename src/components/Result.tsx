@@ -4,13 +4,10 @@ import { NUSACHIM } from '../nusach/nusachim'
 import { hebrewYearString } from '../domain/hebrewDate'
 import { CopyButton } from './CopyButton'
 
-const KIND_BADGE: Record<Step['kind'], string> = {
-  info: 'i',
-  action: '⚙',
-  bracha: '✦',
-  declaration: '“',
-  warning: '!',
-  done: '✓',
+function badgeFor(step: Step): string | number {
+  if (step.kind === 'warning') return '!'
+  if (step.kind === 'done') return '✓'
+  return step.n // מספר רץ לכל שלבי ההליך
 }
 
 function StepCard({ step }: { step: Step }) {
@@ -18,7 +15,7 @@ function StepCard({ step }: { step: Step }) {
   return (
     <div className={`step ${step.kind}`}>
       <div className="head">
-        <span className="badge">{step.kind === 'info' || step.kind === 'action' ? step.n : KIND_BADGE[step.kind]}</span>
+        <span className="badge">{badgeFor(step)}</span>
         <span className="title">{step.title}</span>
       </div>
       {step.body && <div className="body">{step.body}</div>}
