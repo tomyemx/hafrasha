@@ -67,7 +67,11 @@ export function ResultScreen({ scenario, onBack }: { scenario: Scenario; onBack:
             </button>
           )}
           {showDiagram && diagramOpen && (
-            <DirectionDiagram kind={scenario.maaser.kind} style={scenario.directionStyle} />
+            <DirectionDiagram
+              kind={scenario.maaser.kind}
+              style={scenario.directionStyle}
+              phase={step.kind === 'declaration' ? 'declaration' : 'prep'}
+            />
           )}
         </div>
       </main>

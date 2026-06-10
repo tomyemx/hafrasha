@@ -176,8 +176,11 @@ export function generatePlan(scn: Scenario): GeneratedPlan {
   const needBrachaPidyon = scn.certainty === 'vadai' && scn.maaser.kind === 'sheni'
 
   // 1) הכנה — חיתוך חתיכת פרי והנחתה
+  const giftName = scn.maaser.kind === 'ani' ? 'מעשר עני' : 'מעשר שני'
+  const sideTop = scn.directionStyle === 'right-left' ? 'ימין' : 'הצפוני (העליון)'
+  const sideBot = scn.directionStyle === 'right-left' ? 'שמאל' : 'הדרומי (התחתון)'
   const placeText = t.usesDirections
-    ? ` הניחו אותה בצד ${scn.directionStyle === 'right-left' ? 'ימין' : 'הצפוני (העליון)'} של הערימה (ראו איור).`
+    ? ` הניחו אותה בצד ${sideTop} של הערימה. בצד ${sideBot} יופיע ${giftName} — שם תקדישו אותו בעת אמירת הנוסח, ולכן הוא מסומן כבר עכשיו באיור.`
     : ' ניתן להחזיקהּ ביד בזמן אמירת הנוסח.'
   push({
     kind: 'info',
