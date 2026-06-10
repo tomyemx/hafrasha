@@ -2,6 +2,7 @@ import type {
   Scenario,
   Certainty,
   ChilulMethod,
+  DirectionStyle,
   NusachId,
   ProduceCategory,
   RevaiStatus,
@@ -18,6 +19,7 @@ export interface ScenarioInput {
   maaser: MaaserYearResult
   revai: RevaiStatus
   chilulMethod: ChilulMethod
+  directionStyle: DirectionStyle
 }
 
 export function buildScenario(input: ScenarioInput): Scenario {
@@ -32,6 +34,7 @@ export function buildScenario(input: ScenarioInput): Scenario {
     maaser,
     revai,
     chilulMethod: input.chilulMethod,
+    directionStyle: input.directionStyle,
     needsCoin,
   }
 }

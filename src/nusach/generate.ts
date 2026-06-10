@@ -1,4 +1,4 @@
-import type { Scenario } from '../domain/types'
+import type { DirectionStyle, Scenario } from '../domain/types'
 import { NUSACHIM } from './nusachim'
 
 // ===== מנוע בניית ההנחיות והנוסח =====
@@ -12,31 +12,54 @@ export interface Step {
   body?: string
   /** טקסט לאמירה (ברכה/נוסח) — יוצג מודגש וניתן להעתקה */
   say?: string
+  /** האם להציג בשלב זה את איור הכיוונים */
+  showDiagram?: boolean
 }
 
 export interface GeneratedPlan {
   steps: Step[]
-  /** הנוסח המלא המורכב (ההצהרה), לשמירה/העתקה */
   fullNusach: string
-  /** סיכום קצר של התרחיש לכותרת התוצאה */
   summary: string[]
-  /** האם זהו מצב חריג (שמיטה/ערלה) שאין בו הפרשה רגילה */
   blocked?: boolean
 }
 
 const COIN_INSTRUCTIONS =
-  'ייחדו מטבע (למשל חצי שקל או שקל) שתשמש לחילול מעשר שני ורבעי, והניחו אותה במקום שמור וקבוע. ' +
-  'בכל הפרשה מעבירים את הקדושה אל חלק קטן מערך המטבע (שווה פרוטה). אפשר להמשיך להשתמש באותה מטבע פעמים רבות, ' +
-  'עד שכמעט "מתמלאת"; אז מחללים את כל ערכה על פרי/חתיכת סוכר ששווה פרוטה, מאבדים אותה בכבוד, וממשיכים מחדש.'
+  'ייחדו מטבע (למשל חצי שקל או שקל) שישמש לחילול מעשר שני ורבעי, והניחו אותו במקום שמור וקבוע. ' +
+  'בכל הפרשה מעבירים את הקדושה אל חלק קטן מערכּו של המטבע (שווה פרוטה), והוא ממשיך לשמש פעמים רבות. ' +
+  'כשהמטבע כמעט "מתמלא", מחללים את כל ערכּו על חתיכת סוכר או פרי ששווה פרוטה: עוטפים אותה היטב (בשקית או בנייר) ' +
+  'ומניחים בפח בכבוד — אין לאוכלה — וממשיכים מחדש באותו מטבע.'
 
 const PAT_INSTRUCTIONS =
   'הכינו חתיכת פת (או מאכל אחר) ששווה לפחות פרוטה — היא תשמש לחילול. ' +
-  'שימו לב: לאחר אמירת הנוסח הפת עצמה הופכת למעשר שני — אין לאכול אותה, אלא לעטוף ולהשליך בכבוד (כמו התרומה). ' +
-  'חילול על פת מתאים בעיקר לכמות ביתית קטנה (כששווי מעשר שני אינו עולה על פרוטה); לכתחילה עדיף לחלל על מטבע כסף.'
+  'לאחר אמירת הנוסח החתיכה הופכת למעשר שני: אין לאוכלה. עוטפים אותה היטב (בשקית או בנייר) ' +
+  'ומניחים בפח בכבוד, כדרך שנוהגים בתרומה. ' +
+  'חילול על פת מתאים בעיקר לכמות ביתית קטנה; לכתחילה עדיף לחלל על מטבע כסף.'
 
 const DISPOSAL_INSTRUCTIONS =
   'החלק שהופרש לתרומה גדולה ולתרומת מעשר (מעט יותר ממאית) קדוש ואסור באכילה ובהנאה. ' +
-  'עטפו אותו (למשל בשקית) והשליכו לאשפה בכבוד. שאר הפירות מותרים כעת באכילה.'
+  'עטפו אותו היטב (בשקית או בנייר) והניחו בפח בכבוד. שאר הפירות מותרים כעת באכילה.'
+
+// ---- החלפת ניסוח הכיוונים: צפון/דרום ← ימין/שמאל ----
+const DIRECTION_MAP: [string, string][] = [
+  ['בְּצַד צְפוֹנוֹ', 'בְּצַד יְמִינוֹ'],
+  ['שֶׁבְּצַד צָפוֹן', 'שֶׁבְּצַד יָמִין'],
+  ['בַּצַּד הַצְּפוֹנִי', 'בַּצַּד הַיְּמָנִי'],
+  ['שֶׁבַּצָּפוֹן', 'שֶׁבַּיָּמִין'],
+  ['בִּצְפוֹנוֹ', 'בִּימִינוֹ'],
+  ['בִּצְפוֹנָם', 'בִּימִינָם'],
+  ['בִּדְרוֹם הַפֵּירוֹת', 'בִּשְׂמֹאל הַפֵּירוֹת'],
+  ['בַּצַּד הַדְּרוֹמִי', 'בַּצַּד הַשְּׂמָאלִי'],
+  ['בְּצַד דְּרוֹמוֹ', 'בְּצַד שְׂמֹאלוֹ'],
+  ['בִּדְרוֹמוֹ', 'בִּשְׂמֹאלוֹ'],
+  ['בִּדְרוֹמָם', 'בִּשְׂמֹאלָם'],
+]
+
+function applyDirectionStyle(text: string, style: DirectionStyle): string {
+  if (style !== 'right-left') return text
+  let out = text
+  for (const [from, to] of DIRECTION_MAP) out = out.split(from).join(to)
+  return out
+}
 
 function sheniChilulText(scn: Scenario): string {
   const t = NUSACHIM[scn.nusachId]
@@ -53,10 +76,7 @@ function buildDeclaration(scn: Scenario): string {
 
   if (scn.maaser.kind === 'sheni') {
     parts.push(t.maaserSheniLocation, sheniChilulText(scn))
-    if (scn.certainty === 'demai') {
-      // בדמאי מוסיפים את אפשרות מעשר עני מספק
-      parts.push(t.safekAniLine)
-    }
+    if (scn.certainty === 'demai') parts.push(t.safekAniLine)
   } else if (scn.maaser.kind === 'ani') {
     parts.push(t.maaserAni)
   }
@@ -65,7 +85,7 @@ function buildDeclaration(scn: Scenario): string {
     parts.push(revaiChilulText(scn))
   }
 
-  return parts.join('\n')
+  return applyDirectionStyle(parts.join('\n'), scn.directionStyle)
 }
 
 /** שלב הכנת אמצעי החילול (מטבע או פת) */
@@ -81,7 +101,7 @@ export function generatePlan(scn: Scenario): GeneratedPlan {
   let n = 1
   const push = (s: Omit<Step, 'n'>) => steps.push({ n: n++, ...s })
 
-  // --- מצב שמיטה ---
+  // --- שמיטה ---
   if (scn.maaser.kind === 'shmita') {
     return {
       steps: [
@@ -101,7 +121,7 @@ export function generatePlan(scn: Scenario): GeneratedPlan {
     }
   }
 
-  // --- מצב ערלה ---
+  // --- ערלה ---
   if (scn.revai === 'orlah') {
     return {
       steps: [
@@ -120,13 +140,14 @@ export function generatePlan(scn: Scenario): GeneratedPlan {
     }
   }
 
-  // --- מצב רבעי ודאי: כל הפרי קודש, נפדה (ללא תרו"מ) ---
+  // --- נטע רבעי ודאי: כל הפרי קודש, נפדה (ללא תרו"מ) ---
   if (scn.revai === 'vadai') {
     push({
       kind: 'info',
       title: 'הכנה — נטע רבעי',
       body:
-        'הפרי הוא נטע רבעי (שנה רביעית לעץ): כל הפרי קודש ואין מפרישים ממנו תרומות ומעשרות, אלא פודים את כולו על מטבע.',
+        'הפרי הוא נטע רבעי (שנה רביעית לעץ): כל הפרי קודש ואין מפרישים ממנו תרומות ומעשרות, ' +
+        'אלא פודים את כולו (על מטבע או על פת ששווה פרוטה).',
     })
     push(chilulPrepStep(scn))
     push({
@@ -150,48 +171,49 @@ export function generatePlan(scn: Scenario): GeneratedPlan {
     }
   }
 
-  // ===== מסלול רגיל (וגם ספק רבעי, שמצרף סעיף רבעי לנוסח) =====
+  // ===== מסלול רגיל (וגם ספק רבעי) =====
   const decl = buildDeclaration(scn)
   const needBrachaPidyon = scn.certainty === 'vadai' && scn.maaser.kind === 'sheni'
 
-  // 1) הכנה
+  // 1) הכנה — חיתוך חתיכת פרי והנחתה
+  const placeText = t.usesDirections
+    ? ` הניחו אותה בצד ${scn.directionStyle === 'right-left' ? 'ימין' : 'הצפוני (העליון)'} של הערימה (ראו איור).`
+    : ' ניתן להחזיקהּ ביד בזמן אמירת הנוסח.'
   push({
     kind: 'info',
     title: 'הכנה',
     body:
-      'הניחו את כל הפירות לפניכם. קחו ביד חתיכה אחת בגודל מעט יותר ממאית מכמות הפירות (קצת יותר מאחוז אחד) — ' +
-      'חתיכה זו תשמש לתרומה גדולה ולתרומת מעשר.' +
-      (t.usesDirections ? ' רצוי שתהיה בצד צפון/עליון של הפירות.' : ' ניתן להחזיקהּ ביד בזמן אמירת הנוסח.') +
-      (scn.certainty === 'demai'
-        ? ' מכיוון שאינכם בטוחים שלא עושרו (דמאי/ספק) — מפרישים אך אין מברכים.'
-        : ''),
+      'הניחו את כל הפירות לפניכם. הפרישו חתיכת פרי בגודל מעט יותר ממאית מכמות הפירות (קצת יותר מאחוז אחד) — ' +
+      'אם צריך, חתכו חתיכה כזו מאחד הפירות. חתיכה זו תשמש לתרומה גדולה ולתרומת מעשר.' +
+      placeText +
+      (scn.certainty === 'demai' ? ' מכיוון שאינכם בטוחים שלא עושרו (דמאי/ספק) — מפרישים אך אין מברכים.' : ''),
+    showDiagram: t.usesDirections,
   })
 
-  // 2) הכנת אמצעי החילול (מטבע או פת)
-  if (scn.needsCoin) {
-    push(chilulPrepStep(scn))
-  }
+  // 2) הכנת אמצעי החילול
+  if (scn.needsCoin) push(chilulPrepStep(scn))
 
   // 3) ברכת ההפרשה (רק בוודאי)
   if (scn.certainty === 'vadai') {
     push({ kind: 'bracha', title: 'ברכת ההפרשה', body: 'לפני ההפרשה ברכו:', say: t.brachaHafrasha })
   }
 
-  // 4) אמירת הנוסח (ההצהרה)
+  // 4) אמירת הנוסח
   push({
     kind: 'declaration',
     title: 'אמירת הנוסח',
     body: 'אִמרו את נוסח ההפרשה במלואו:',
     say: decl,
+    showDiagram: t.usesDirections,
   })
 
-  // 5) ברכת פדיון מעשר שני (רק בוודאי + שנת מעשר שני)
+  // 5) ברכת פדיון מעשר שני — נוסף רק כשזו שנת מעשר שני ודאי
   if (needBrachaPidyon) {
     push({
       kind: 'bracha',
       title: 'ברכת פדיון מעשר שני',
       body:
-        'בשנת מעשר שני, לפני אמירת החילול (אם לא נכלל לעיל), ברכו:' +
+        'זוהי שנת מעשר שני — לפני חילול המעשר על המטבע/הפת, ברכו:' +
         (scn.chilulMethod === 'pat'
           ? ' (כשמחללים על פת/מאכל — יש המשנים או משמיטים ברכה זו, ובפרט בעדות המזרח; היוועצו ברב.)'
           : ''),
@@ -199,10 +221,9 @@ export function generatePlan(scn: Scenario): GeneratedPlan {
     })
   }
 
-  // 6) סיום וטיפול בתרומה
+  // 6) סיום
   push({ kind: 'done', title: 'סיום וטיפול בתרומה', body: DISPOSAL_INSTRUCTIONS })
 
-  // סיכום
   const summary: string[] = []
   summary.push(scn.maaser.kind === 'sheni' ? 'מעשר שני' : 'מעשר עני')
   summary.push(scn.certainty === 'vadai' ? 'ודאי טבל — עם ברכה' : 'דמאי/ספק — בלי ברכה')

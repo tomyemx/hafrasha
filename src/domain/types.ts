@@ -20,6 +20,9 @@ export type Certainty = 'vadai' | 'demai'
  */
 export type ChilulMethod = 'coin' | 'pat'
 
+/** ניסוח הכיוונים בנוסח: צפון/דרום או ימין/שמאל */
+export type DirectionStyle = 'north-south' | 'right-left'
+
 /** סוג המעשר השני בשנה זו */
 export type MaaserKind = 'sheni' | 'ani' | 'shmita'
 
@@ -57,6 +60,8 @@ export interface Scenario {
   revai: RevaiStatus
   /** אופן החילול שנבחר (מטבע/פת) */
   chilulMethod: ChilulMethod
+  /** ניסוח הכיוונים (צפון-דרום / ימין-שמאל) */
+  directionStyle: DirectionStyle
   /** האם נדרש חילול בכלל (מעשר שני או רבעי) */
   needsCoin: boolean
 }

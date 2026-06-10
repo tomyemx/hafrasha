@@ -1,4 +1,4 @@
-import { HDate, formatHebrewDate, tuBishvat, hebrewYearString } from './hebrewDate'
+import { HDate, formatHebrewDate, formatGreg, tuBishvat, hebrewYearString } from './hebrewDate'
 import type { ProduceCategory, MaaserKind, MaaserYearResult } from './types'
 
 // ===== חישוב שנת המעשר ומחזור השמיטה =====
@@ -74,11 +74,12 @@ export function maaserYearFromDate(greg: Date, cat: ProduceCategory): MaaserYear
 
   if (boundary === 'tu-bishvat') {
     const tu = tuBishvat(H)
+    const tuLabel = `ט״ו בשבט ${hebrewYearString(H)} (${formatGreg(tu.greg())})`
     if (hd.abs() < tu.abs()) {
       maaserYear = H - 1
-      note = `הפרי נקטף לפני ט״ו בשבט (${formatHebrewDate(hd)}), ולכן שייך לשנת המעשר הקודמת. (לפירות אילן הקובע ההלכתי הוא זמן החנטה.)`
+      note = `הגבול לפירות אילן הוא ${tuLabel}. הפרי נקטף לפניו, ולכן שייך לשנת המעשר הקודמת. (הקובע ההלכתי הוא זמן החנטה.)`
     } else {
-      note = `הפרי נקטף לאחר ט״ו בשבט (${formatHebrewDate(hd)}). (לפירות אילן הקובע ההלכתי הוא זמן החנטה.)`
+      note = `הגבול לפירות אילן הוא ${tuLabel}. הפרי נקטף אחריו. (הקובע ההלכתי הוא זמן החנטה.)`
     }
   }
 

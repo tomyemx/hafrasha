@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react'
-import type { Certainty, ChilulMethod, NusachId, ProduceCategory, RevaiStatus } from './domain/types'
+import type { Certainty, ChilulMethod, DirectionStyle, NusachId, ProduceCategory, RevaiStatus } from './domain/types'
 import { PRODUCE, CATEGORY_LABEL, findProduce } from './domain/produce'
 import { maaserYearFromDate, maaserYearFromHebrewYear } from './domain/maaserYear'
 import { classifyOrlah } from './domain/orlah'
 import { buildScenario } from './domain/engine'
 import { NUSACHIM, NUSACH_ORDER } from './nusach/nusachim'
-import { hebrewYearString, HDate } from './domain/hebrewDate'
+import { HDate } from './domain/hebrewDate'
 import { Segmented, Sheet } from './components/ui'
+import { FieldHead, HebrewYearSelect } from './components/Field'
 import { ResultScreen } from './components/ResultScreen'
 
 const PRODUCE_GROUPS: { cat: ProduceCategory; label: string }[] = [
@@ -24,6 +25,21 @@ const REVAI_LABELS: Record<RevaiStatus, string> = {
   orlah: 'חשש ערלה',
 }
 
+const HELP = {
+  nusach: 'הנוסח קובע את מילות ההצהרה. כל העדות מפרישות את אותו הדבר — ההבדל הוא בניסוח. בחרו לפי מנהג העדה/הפוסק שלכם.',
+  produce:
+    'סוג הגידול קובע את גבול שנת המעשר: פירות אילן לפי ט״ו בשבט, וירקות/תבואה/קטניות לפי ראש השנה. כן משפיע על שאלת נטע רבעי (רק בעצים).',
+  certainty:
+    'ודאי טבל = ידוע שלא הופרש (גינה פרטית, מתנה) — מפרישים ומברכים. דמאי/ספק = נקנה ללא השגחה ואולי כבר הופרש — מפרישים בלי ברכה.',
+  year: 'שנת המעשר במחזור השמיטה קובעת אם נותנים מעשר שני (שנים א׳,ב׳,ד׳,ה׳) או מעשר עני (ג׳,ו׳). אפשר לחשב מתאריך הלקיטה, או לבחור שנה עברית ידנית.',
+  revai:
+    'נטע רבעי = פרי בשנה הרביעית לעץ (קודש, נפדה). שלוש השנים הראשונות = ערלה (אסור בהנאה). רלוונטי רק לעצים שנטעתם וידועה שנת נטיעתם.',
+  chilul:
+    'כשיש מעשר שני, מעבירים את קדושתו (״מחללים״) על מטבע ייעודי — לכתחילה — או על פת/מאכל ששווה פרוטה שמושמד בכבוד.',
+  direction:
+    'בנוסח מסמנים אילו חלקים בערימה הם תרומה ואילו מעשר. אפשר לסמן לפי צפון/דרום או לפי ימין/שמאל — כראות עיניכם. זו רק דרך לסמן צדדים מוגדרים.',
+}
+
 function todayISO(): string {
   const d = new Date()
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10)
@@ -39,6 +55,7 @@ export function App() {
   const [customCat, setCustomCat] = useState<ProduceCategory>('tree')
   const [certainty, setCertainty] = useState<Certainty>('vadai')
   const [chilulMethod, setChilulMethod] = useState<ChilulMethod>('coin')
+  const [directionStyle, setDirectionStyle] = useState<DirectionStyle>('north-south')
 
   const [dateMode, setDateMode] = useState<'auto' | 'manual'>('auto')
   const [harvestDate, setHarvestDate] = useState<string>(todayISO())
@@ -79,8 +96,18 @@ export function App() {
   }, [isTree, revaiMode, revaiManual, orlahAuto.status])
 
   const scenario = useMemo(
-    () => buildScenario({ nusachId, produce: category, produceLabel, certainty, maaser, revai, chilulMethod }),
-    [nusachId, category, produceLabel, certainty, maaser, revai, chilulMethod]
+    () =>
+      buildScenario({
+        nusachId,
+        produce: category,
+        produceLabel,
+        certainty,
+        maaser,
+        revai,
+        chilulMethod,
+        directionStyle,
+      }),
+    [nusachId, category, produceLabel, certainty, maaser, revai, chilulMethod, directionStyle]
   )
 
   const blocked = scenario.maaser.kind === 'shmita' || scenario.revai === 'orlah'
@@ -93,6 +120,7 @@ export function App() {
   const advSummary = [
     isTree ? `רבעי: ${REVAI_LABELS[revai]}` : null,
     `חילול: ${chilulMethod === 'pat' ? 'פת' : 'מטבע'}`,
+    nx.usesDirections ? `כיוונים: ${directionStyle === 'right-left' ? 'ימין/שמאל' : 'צפון/דרום'}` : null,
   ]
     .filter(Boolean)
     .join(' · ')
@@ -110,7 +138,7 @@ export function App() {
       <main className="content">
         {/* נוסח */}
         <div className="ctl">
-          <label htmlFor="nusach">נוסח</label>
+          <FieldHead label="נוסח" help={HELP.nusach} htmlFor="nusach" />
           <select id="nusach" value={nusachId} onChange={(e) => setNusachId(e.target.value as NusachId)}>
             {NUSACH_ORDER.map((id) => (
               <option key={id} value={id}>
@@ -123,7 +151,7 @@ export function App() {
 
         {/* גידול */}
         <div className="ctl">
-          <label htmlFor="produce">סוג הגידול</label>
+          <FieldHead label="סוג הגידול" help={HELP.produce} htmlFor="produce" />
           <select id="produce" value={produceId} onChange={(e) => setProduceId(e.target.value)}>
             {PRODUCE_GROUPS.map((g) => (
               <optgroup key={g.cat} label={g.label}>
@@ -150,7 +178,7 @@ export function App() {
 
         {/* מקור */}
         <div className="ctl">
-          <label>מקור הפירות</label>
+          <FieldHead label="מקור הפירות" help={HELP.certainty} />
           <Segmented
             value={certainty}
             onChange={setCertainty}
@@ -163,12 +191,12 @@ export function App() {
 
         {/* שנה */}
         <div className="ctl">
-          <label>שנת המעשר</label>
+          <FieldHead label="שנת המעשר" help={HELP.year} />
           <Segmented
             value={dateMode}
             onChange={setDateMode}
             options={[
-              { v: 'auto', label: 'מתאריך' },
+              { v: 'auto', label: 'תאריך לקיטה' },
               { v: 'manual', label: 'בחירה ידנית' },
             ]}
           />
@@ -180,14 +208,7 @@ export function App() {
               onChange={(e) => setHarvestDate(e.target.value)}
             />
           ) : (
-            <input
-              type="number"
-              aria-label="שנת המעשר העברית"
-              value={manualYear}
-              min={5700}
-              max={5900}
-              onChange={(e) => setManualYear(parseInt(e.target.value || '0', 10))}
-            />
+            <HebrewYearSelect id="myear" value={manualYear} onChange={setManualYear} from={currentHebYear + 3} to={currentHebYear - 10} />
           )}
           <div className="mini">{maaser.explanation}</div>
         </div>
@@ -214,14 +235,14 @@ export function App() {
       <Sheet open={advancedOpen} onClose={() => setAdvancedOpen(false)} title="הגדרות מתקדמות">
         {isTree && (
           <div className="sheet-section">
-            <span className="lab">נטע רבעי / ערלה</span>
+            <FieldHead label="נטע רבעי / ערלה" help={HELP.revai} />
             <Segmented
               value={revaiMode}
               onChange={setRevaiMode}
               options={[
                 { v: 'off', label: 'עץ ותיק' },
+                { v: 'manual', label: 'בחירה ידנית' },
                 { v: 'auto', label: 'לפי נטיעה' },
-                { v: 'manual', label: 'ידני' },
               ]}
             />
             {revaiMode === 'auto' && (
@@ -229,15 +250,7 @@ export function App() {
                 <div className="row" style={{ marginTop: 12 }}>
                   <div className="ctl">
                     <label htmlFor="pyear">שנת נטיעה</label>
-                    <input
-                      id="pyear"
-                      type="number"
-                      value={plantingYear}
-                      min={5700}
-                      max={5900}
-                      onChange={(e) => setPlantingYear(parseInt(e.target.value || '0', 10))}
-                    />
-                    <div className="note-line">{hebrewYearString(plantingYear)}</div>
+                    <HebrewYearSelect id="pyear" value={plantingYear} onChange={setPlantingYear} from={currentHebYear} to={currentHebYear - 40} />
                   </div>
                   <div className="ctl">
                     <label>זמן הנטיעה</label>
@@ -279,7 +292,7 @@ export function App() {
         )}
 
         <div className="sheet-section">
-          <span className="lab">אופן חילול מעשר שני</span>
+          <FieldHead label="אופן חילול מעשר שני" help={HELP.chilul} />
           {blocked ? (
             <div className="note-line">בתרחיש זה (שמיטה/ערלה) אין חילול — אפשרות זו אינה רלוונטית.</div>
           ) : !scenario.needsCoin ? (
@@ -297,11 +310,25 @@ export function App() {
               <div className="note-line" style={{ marginTop: 8 }}>
                 {chilulMethod === 'pat'
                   ? 'הפת הופכת למעשר שני — אין לאוכלה, יש להשמידה בכבוד. מתאים לכמות ביתית קטנה; יש המשנים את הברכה.'
-                  : 'לכתחילה מחללים על מטבע כסף ייעודית, וניתן להשתמש בה פעמים רבות.'}
+                  : 'לכתחילה מחללים על מטבע כסף ייעודי, וניתן להשתמש בו פעמים רבות.'}
               </div>
             </>
           )}
         </div>
+
+        {nx.usesDirections && (
+          <div className="sheet-section">
+            <FieldHead label="ניסוח הכיוונים" help={HELP.direction} />
+            <Segmented
+              value={directionStyle}
+              onChange={setDirectionStyle}
+              options={[
+                { v: 'north-south', label: 'צפון / דרום' },
+                { v: 'right-left', label: 'ימין / שמאל' },
+              ]}
+            />
+          </div>
+        )}
 
         <button type="button" className="cta secondary" onClick={() => setAdvancedOpen(false)}>
           סיום

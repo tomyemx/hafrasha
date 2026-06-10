@@ -27,7 +27,8 @@ export function ResultScreen({ scenario, onBack }: { scenario: Scenario; onBack:
   const n = plan.steps.length
   const idx = Math.min(i, n - 1)
   const step = plan.steps[idx]
-  const isDeclaration = step.kind === 'declaration' && nusach.usesDirections
+  const showDiagram = !!step.showDiagram
+  const axisLabel = scenario.directionStyle === 'right-left' ? 'ימין/שמאל' : 'צפון/דרום'
 
   return (
     <div className="screen">
@@ -60,12 +61,14 @@ export function ResultScreen({ scenario, onBack }: { scenario: Scenario; onBack:
               <CopyButton text={step.say} />
             </>
           )}
-          {isDeclaration && (
+          {showDiagram && (
             <button type="button" className="linkbtn" onClick={() => setDiagramOpen((o) => !o)}>
-              {diagramOpen ? 'הסתר איור הכיוונים' : 'מה הכוונה ב״צפון/דרום״? הצגת איור'}
+              {diagramOpen ? 'הסתר איור הכיוונים' : `מה הכוונה ב״${axisLabel}״? הצגת איור`}
             </button>
           )}
-          {isDeclaration && diagramOpen && <DirectionDiagram kind={scenario.maaser.kind} />}
+          {showDiagram && diagramOpen && (
+            <DirectionDiagram kind={scenario.maaser.kind} style={scenario.directionStyle} />
+          )}
         </div>
       </main>
 

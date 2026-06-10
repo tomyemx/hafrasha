@@ -32,6 +32,11 @@ export function toHDate(greg: Date): HDate {
   return new HDate(greg)
 }
 
+/** תאריך לועזי קריא בעברית, למשל "2 בפברואר 2026" */
+export function formatGreg(greg: Date): string {
+  return new Intl.DateTimeFormat('he-IL', { day: 'numeric', month: 'long', year: 'numeric' }).format(greg)
+}
+
 /** ט"ו בשבט של שנה עברית נתונה (חודש 11 = שבט) */
 export function tuBishvat(hebrewYear: number): HDate {
   return new HDate(15, 11, hebrewYear)

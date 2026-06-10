@@ -80,7 +80,7 @@ try {
   await page.locator('#nusach').selectOption('mekubal')
 
   // 4) מעשר שני מול עני (פרי עץ) דרך תאריך
-  await seg('מתאריך')
+  await seg('תאריך לקיטה')
   await page.locator('input[type=date]').fill('2026-02-20')
   await toResult()
   let txt = await allStepsText()
@@ -108,13 +108,13 @@ try {
 
   // 6) שמיטה (תשפ"ט) → חסום, שלב יחיד
   await seg('בחירה ידנית')
-  await page.locator('input[type=number]').fill('5789')
+  await page.locator('#myear').selectOption('5789')
   await toResult()
   txt = await allStepsText()
   ok('תשפ"ט → אזהרת שמיטה', txt.includes('שמיטה'))
   ok('שמיטה → שלב יחיד', (await stepCount()) === 1)
   await toPrefs()
-  await seg('מתאריך')
+  await seg('תאריך לקיטה')
   await page.locator('input[type=date]').fill('2026-02-20')
 
   // 7) חילול על פת (חלונית מתקדם)
@@ -136,7 +136,7 @@ try {
   // 8) נטע רבעי אוטומטי (ניטע תשפ"ג → שנה רביעית)
   await page.locator('.advanced-btn').click()
   await page.locator('.seg-btn', { hasText: 'לפי נטיעה' }).click()
-  await page.locator('#pyear').fill('5783')
+  await page.locator('#pyear').selectOption('5783')
   await page.locator('.seg-btn', { hasText: 'עד ט' }).click()
   await page.locator('.sheet-close').click()
   await toResult()
@@ -160,7 +160,43 @@ try {
   ok('כפתור העתקה מעתיק טקסט', strip(clip).length > 5, `הועתק: ${strip(clip).slice(0, 30)}`)
   await toPrefs()
 
-  // 10) חלונית הבהרה ומקורות
+  // 10) כפתור הסבר לשדה
+  await page.locator('.help-btn').first().click()
+  ok('כפתור הסבר פותח תיבת הסבר', await page.locator('.help-box').first().isVisible())
+  await page.locator('.help-btn').first().click()
+
+  // 11) תאריך לועזי לצד ט"ו בשבט (פרי עץ)
+  await seg('תאריך לקיטה')
+  await page.locator('input[type=date]').fill('2026-02-20')
+  ok('הסבר השנה כולל ט"ו בשבט ותאריך לועזי', /ט.{0,2}ו בשבט/.test(await page.locator('.mini').innerText()) && /202\d/.test(await page.locator('.mini').innerText()))
+
+  // 12) בחירת שנה עברית (לא מספרי)
+  await seg('בחירה ידנית')
+  ok('בחירת שנה היא רשימה נפתחת', (await page.locator('#myear').evaluate((el) => el.tagName)) === 'SELECT')
+  ok('אפשרויות השנה בעברית', (await page.locator('#myear option').first().innerText()).includes('ה׳'))
+  await seg('תאריך לקיטה')
+  await page.locator('input[type=date]').fill('2026-02-20')
+
+  // 13) ניסוח ימין/שמאל
+  await page.locator('.advanced-btn').click()
+  await page.locator('.seg-btn', { hasText: 'ימין / שמאל' }).click()
+  await page.locator('.sheet-close').click()
+  await toResult()
+  txt = await allStepsText()
+  ok('ימין/שמאל → הנוסח מזכיר ימין', txt.includes('ימין'))
+  ok('ימין/שמאל → אין "צפון" בנוסח', !txt.includes('צפון'))
+  await toPrefs()
+  await page.locator('.advanced-btn').click()
+  await page.locator('.seg-btn', { hasText: 'צפון / דרום' }).click()
+  await page.locator('.sheet-close').click()
+
+  // 14) המחשה ויזואלית גם בשלב ההכנה
+  await toResult()
+  ok('שלב ההכנה מציע איור כיוונים', (await page.locator('.stepcard').innerText()).includes('מה הכוונה'))
+  ok('שלב ההכנה אומר "חתיכת פרי"', (await page.locator('.stepcard').innerText()).includes('חתיכת פרי'))
+  await toPrefs()
+
+  // 15) חלונית הבהרה ומקורות
   await page.locator('.linkbtn', { hasText: 'הבהרה' }).click()
   ok('הבהרה מוצגת', (await page.locator('.disclaimer').innerText()).includes('אינו פוסק הלכה'))
   ok('6 קישורי מקור', (await page.locator('.sources li').count()) === 6)
