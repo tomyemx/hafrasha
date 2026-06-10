@@ -1,0 +1,9 @@
+node_modules
+dist
+*.tsbuildinfo
+dist-ssr
+*.local
+.DS_Store
+.vite
+_research_*.txt
+_research_*.pdf
