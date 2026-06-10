@@ -13,7 +13,7 @@ export function run(dateStr, cat, nusachId, certainty, revaiOpt) {
   const maaser = maaserYearFromDate(new Date(dateStr + 'T12:00:00'), cat)
   let revai = 'none'
   if (revaiOpt) revai = revaiOpt
-  const scn = buildScenario({ nusachId, produce: cat, produceLabel: 'בדיקה', certainty, maaser, revai })
+  const scn = buildScenario({ nusachId, produce: cat, produceLabel: 'בדיקה', certainty, maaser, revai, chilulMethod: 'coin' })
   const plan = generatePlan(scn)
   return { kind: maaser.kind, year: maaser.maaserYear, needsCoin: scn.needsCoin,
     steps: plan.steps.map(s => s.title), blocked: !!plan.blocked, nusachLen: plan.fullNusach.length }

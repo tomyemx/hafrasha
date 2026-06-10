@@ -14,6 +14,8 @@ export interface NusachTexts {
   sourceUrl: string
   /** האם גוף ההצהרה צוטט מילה במילה ממקור כתוב */
   verbatim: boolean
+  /** האם הנוסח מציין צדדים/כיוונים (צפון/דרום) */
+  usesDirections: boolean
   note?: string
 
   brachaHafrasha: string
@@ -24,8 +26,12 @@ export interface NusachTexts {
   terumatMaaser: string
   maaserSheniLocation: string
   maaserSheniChilul: string
+  /** חילול מעשר שני על פת/מאכל (חלופה למטבע) */
+  maaserSheniChilulPat: string
   maaserAni: string
   revaiChilul: string
+  /** חילול נטע רבעי על פת/מאכל */
+  revaiChilulPat: string
   safekAniLine: string
 }
 
@@ -44,6 +50,7 @@ export const NUSACHIM: Record<NusachId, NusachTexts> = {
     source: 'ויקיטקסט — נוסח הפרשת תרומות ומעשרות',
     sourceUrl: 'https://he.wikisource.org/wiki/נוסח_הפרשת_תרומות_ומעשרות',
     verbatim: true,
+    usesDirections: true,
     brachaHafrasha: BRACHA_HAFRASHA_STD,
     brachaPidyon: BRACHA_PIDYON_STD,
     terumaGedola: 'הָעוֹדֵף מִמֵּאִית מִמַּה שֶּׁיֵּשׁ כָּאן, הֲרֵי הוּא תְּרוּמָה גְּדוֹלָה בִּצְפוֹנוֹ.',
@@ -52,9 +59,11 @@ export const NUSACHIM: Record<NusachId, NusachTexts> = {
     terumatMaaser: 'אוֹתָהּ הַמֵּאִית שֶׁעֲשִׂיתִי אוֹתָהּ מַעֲשֵׂר רִאשׁוֹן, הֲרֵי הִיא תְּרוּמַת מַעֲשֵׂר.',
     maaserSheniLocation: 'וּמַעֲשֵׂר שֵׁנִי בִּדְרוֹם הַפֵּירוֹת.',
     maaserSheniChilul: 'וּמְחוּלָּל הוּא וְחוֹמְשׁוֹ עַל פְּרוּטָה בַּמַּטְבֵּעַ שֶׁיִּחַדְתִּי לְחִילּוּל מַעֲשֵׂר שֵׁנִי.',
+    maaserSheniChilulPat: 'וּמְחוּלָּל הוּא וְחוֹמְשׁוֹ עַל הַפַּת הַזּוֹ שֶׁשָּׁוָה פְּרוּטָה.',
     maaserAni: 'וּמַעֲשֵׂר עָנִי בִּדְרוֹם הַפֵּירוֹת.',
     revaiChilul:
       'אִם יֵשׁ כָּאן רְבָעִי, יְהֵא מְחוּלָּל הוּא וְחוֹמְשׁוֹ עַל פְּרוּטָה בַּמַּטְבֵּעַ שֶׁיִּחַדְתִּי לְחִילּוּל מַעֲשֵׂר שֵׁנִי וּרְבָעִי.',
+    revaiChilulPat: 'אִם יֵשׁ כָּאן רְבָעִי, יְהֵא מְחוּלָּל הוּא וְחוֹמְשׁוֹ עַל הַפַּת הַזּוֹ שֶׁשָּׁוָה פְּרוּטָה.',
     safekAniLine: 'וְאִם צָרִיךְ מַעֲשֵׂר עָנִי, יְהֵא מַעֲשֵׂר עָנִי בִּדְרוֹם הַפֵּירוֹת.',
   },
 
@@ -66,6 +75,7 @@ export const NUSACHIM: Record<NusachId, NusachTexts> = {
     source: 'ויקיטקסט — סידור נוסח עדות המזרח',
     sourceUrl: 'https://he.wikisource.org/wiki/סידור/נוסח_עדות_המזרח/הפרשת_תרומות_ומעשרות',
     verbatim: true,
+    usesDirections: true,
     note: 'גוף ההצהרה מצוטט מהסידור; סעיף הרבעי הותאם לפי אותו אופן ניסוח.',
     brachaHafrasha:
       "בָּרוּךְ אַתָּה ה' אֱלֹהֵינוּ מֶלֶךְ הָעוֹלָם, אֲשֶׁר קִדְּשָׁנוּ בְּמִצְוֹתָיו, וְצִוָּנוּ לְהַפְרִישׁ תְּרוּמוֹת וּמַעַשְׂרוֹת.",
@@ -77,9 +87,11 @@ export const NUSACHIM: Record<NusachId, NusachTexts> = {
     maaserSheniLocation: 'וּמַעֲשֵׂר שֵׁנִי, הֲרֵי הוּא בִּדְרוֹמוֹ שֶׁל הַכְּלִי שֶׁלְּפָנַי.',
     maaserSheniChilul:
       'מַעֲשֵׂר שֵׁנִי זֶה יִהְיֶה מְחֻלָּל, הוּא וְחֻמְשׁוֹ, עַל שָׁוֶה פְּרוּטָה בַּמַּטְבֵּעַ שֶׁיִּחַדְתִּי לְחַלֵּל עָלָיו.',
+    maaserSheniChilulPat: 'מַעֲשֵׂר שֵׁנִי זֶה יִהְיֶה מְחֻלָּל, הוּא וְחֻמְשׁוֹ, עַל הַפַּת הַזּוֹ שֶׁשָּׁוָה פְּרוּטָה.',
     maaserAni: 'וּמַעֲשֵׂר עָנִי, הֲרֵי הוּא בִּדְרוֹמוֹ שֶׁל הַכְּלִי שֶׁלְּפָנַי.',
     revaiChilul:
       'אִם יֵשׁ כָּאן רְבָעִי, יִהְיֶה מְחֻלָּל הוּא וְחֻמְשׁוֹ עַל שָׁוֶה פְּרוּטָה בַּמַּטְבֵּעַ שֶׁיִּחַדְתִּי לְחַלֵּל עָלָיו.',
+    revaiChilulPat: 'אִם יֵשׁ כָּאן רְבָעִי, יִהְיֶה מְחֻלָּל הוּא וְחֻמְשׁוֹ עַל הַפַּת הַזּוֹ שֶׁשָּׁוָה פְּרוּטָה.',
     safekAniLine: 'וְאִם צָרִיךְ מַעֲשֵׂר עָנִי, יִהְיֶה מַעֲשֵׂר עָנִי בִּדְרוֹמוֹ.',
   },
 
@@ -91,6 +103,7 @@ export const NUSACHIM: Record<NusachId, NusachTexts> = {
     source: 'חידוש — נוסח הפרשת תרומות ומעשרות חזון איש',
     sourceUrl: 'https://www.hidush.co.il/hidush.asp?id=16988',
     verbatim: false,
+    usesDirections: true,
     brachaHafrasha: BRACHA_HAFRASHA_STD,
     brachaPidyon: BRACHA_PIDYON_STD,
     terumaGedola: 'יוֹתֵר מֵאֶחָד מִמֵּאָה שֶׁיֵּשׁ כָּאן, הֲרֵי הוּא תְּרוּמָה גְּדוֹלָה בְּצַד צְפוֹנוֹ.',
@@ -99,8 +112,10 @@ export const NUSACHIM: Record<NusachId, NusachTexts> = {
     terumatMaaser: 'אוֹתוֹ אֶחָד מִמֵּאָה שֶׁעֲשִׂיתִיו מַעֲשֵׂר רִאשׁוֹן, עָשׂוּי תְּרוּמַת מַעֲשֵׂר.',
     maaserSheniLocation: 'וּמַעֲשֵׂר שֵׁנִי בְּצַד דְּרוֹמוֹ.',
     maaserSheniChilul: 'וּמְחוּלָּל הוּא וְחוֹמְשׁוֹ עַל פְּרוּטָה שֶׁבַּמַּטְבֵּעַ שֶׁיִּחַדְתִּי לְחִילּוּל מַעֲשֵׂר שֵׁנִי.',
+    maaserSheniChilulPat: 'וּמְחוּלָּל הוּא וְחוֹמְשׁוֹ עַל הַפַּת הַזּוֹ שֶׁשָּׁוָה פְּרוּטָה.',
     maaserAni: 'וּמַעֲשֵׂר עָנִי בְּצַד דְּרוֹמוֹ.',
     revaiChilul: 'אִם יֵשׁ כָּאן רְבָעִי, מְחוּלָּל הוּא וְחוֹמְשׁוֹ עַל פְּרוּטָה שֶׁבַּמַּטְבֵּעַ שֶׁיִּחַדְתִּי לְחִילּוּל.',
+    revaiChilulPat: 'אִם יֵשׁ כָּאן רְבָעִי, מְחוּלָּל הוּא וְחוֹמְשׁוֹ עַל הַפַּת הַזּוֹ שֶׁשָּׁוָה פְּרוּטָה.',
     safekAniLine: 'וְאִם צָרִיךְ מַעֲשֵׂר עָנִי, יְהֵא מַעֲשֵׂר עָנִי בְּצַד דְּרוֹמוֹ.',
   },
 
@@ -112,6 +127,7 @@ export const NUSACHIM: Record<NusachId, NusachTexts> = {
     source: 'מהרי"ץ — סדר הפרשת תרומות ומעשרות',
     sourceUrl: 'https://www.maharitz.co.il/?CategoryID=248&ArticleID=4536',
     verbatim: false,
+    usesDirections: true,
     note: 'נוסח לפי דרך הרמב"ם הנהוגה בעדות תימן; מומלץ להשוות לסידור/תכלאל הנוהג.',
     brachaHafrasha: BRACHA_HAFRASHA_STD,
     brachaPidyon: BRACHA_PIDYON_STD,
@@ -121,8 +137,10 @@ export const NUSACHIM: Record<NusachId, NusachTexts> = {
     terumatMaaser: 'אוֹתוֹ אֶחָד מִמֵּאָה שֶׁעֲשִׂיתִיו מַעֲשֵׂר רִאשׁוֹן, הֲרֵי הוּא תְּרוּמַת מַעֲשֵׂר עָלָיו.',
     maaserSheniLocation: 'וּמַעֲשֵׂר שֵׁנִי בִּדְרוֹמָם.',
     maaserSheniChilul: 'מַעֲשֵׂר שֵׁנִי זֶה, הוּא וְחֻמְשׁוֹ, מְחוּלָּל עַל פְּרוּטָה מִן הַמַּטְבֵּעַ שֶׁיִּחַדְתִּי לְכָךְ.',
+    maaserSheniChilulPat: 'מַעֲשֵׂר שֵׁנִי זֶה, הוּא וְחֻמְשׁוֹ, מְחוּלָּל עַל הַפַּת הַזּוֹ שֶׁשָּׁוָה פְּרוּטָה.',
     maaserAni: 'וּמַעֲשֵׂר עָנִי בִּדְרוֹמָם.',
     revaiChilul: 'אִם יֵשׁ כָּאן רְבָעִי, הוּא וְחֻמְשׁוֹ מְחוּלָּל עַל פְּרוּטָה מִן הַמַּטְבֵּעַ שֶׁיִּחַדְתִּי לְכָךְ.',
+    revaiChilulPat: 'אִם יֵשׁ כָּאן רְבָעִי, הוּא וְחֻמְשׁוֹ מְחוּלָּל עַל הַפַּת הַזּוֹ שֶׁשָּׁוָה פְּרוּטָה.',
     safekAniLine: 'וְאִם צָרִיךְ מַעֲשֵׂר עָנִי, יְהֵא מַעֲשֵׂר עָנִי בִּדְרוֹמָם.',
   },
 
@@ -135,6 +153,7 @@ export const NUSACHIM: Record<NusachId, NusachTexts> = {
     sourceUrl:
       'https://www.toraland.org.il/שאלות-ותשובות/הארץ-ומצוותיה/תרומות-ומעשרות/שונות/נוסח-מקוצר-להפרשת-תרומות-ומעשרות/',
     verbatim: false,
+    usesDirections: true,
     note: 'נוסח קצר. יש לדעת את עיקר משמעות ההפרשה כדי שתחול.',
     brachaHafrasha: BRACHA_HAFRASHA_STD,
     brachaPidyon: BRACHA_PIDYON_STD,
@@ -143,10 +162,44 @@ export const NUSACHIM: Record<NusachId, NusachTexts> = {
     terumatMaaser: 'וְאוֹתוֹ אֶחָד מִמֵּאָה — תְּרוּמַת מַעֲשֵׂר.',
     maaserSheniLocation: 'וּמַעֲשֵׂר שֵׁנִי בַּצַּד הַדְּרוֹמִי.',
     maaserSheniChilul: 'מְחוּלָּל הוּא וְחוֹמְשׁוֹ עַל פְּרוּטָה שֶׁבַּמַּטְבֵּעַ שֶׁיִּחַדְתִּי לְחִילּוּל מַעֲשֵׂר שֵׁנִי וּרְבָעִי.',
+    maaserSheniChilulPat: 'מְחוּלָּל הוּא וְחוֹמְשׁוֹ עַל הַפַּת הַזּוֹ שֶׁשָּׁוָה פְּרוּטָה.',
     maaserAni: 'וּמַעֲשֵׂר עָנִי בַּצַּד הַדְּרוֹמִי.',
     revaiChilul: 'אִם יֵשׁ כָּאן רְבָעִי — מְחוּלָּל הוּא וְחוֹמְשׁוֹ עַל פְּרוּטָה שֶׁבַּמַּטְבֵּעַ שֶׁיִּחַדְתִּי.',
+    revaiChilulPat: 'אִם יֵשׁ כָּאן רְבָעִי — מְחוּלָּל הוּא וְחוֹמְשׁוֹ עַל הַפַּת הַזּוֹ שֶׁשָּׁוָה פְּרוּטָה.',
     safekAniLine: 'וְאִם צָרִיךְ מַעֲשֵׂר עָנִי — מַעֲשֵׂר עָנִי בַּצַּד הַדְּרוֹמִי.',
+  },
+
+  // ---------- נוסח ללא ציון כיוונים ----------
+  'no-directions': {
+    id: 'no-directions',
+    title: 'ללא כיוונים',
+    subtitle: 'לפי "החתיכה שבידי", בלי צדדים',
+    source: 'מבוסס שיטת ההפרשה ללא ציון צדדים',
+    sourceUrl: 'https://he.wikisource.org/wiki/נוסח_הפרשת_תרומות_ומעשרות',
+    verbatim: false,
+    usesDirections: false,
+    note: 'נוסח שאינו מציין צדדים — ההפרשה חלה על "החתיכה שבידי" ועל החלק שייקבע. נוח כשקשה לציין כיוונים; יש לוודא מול רב.',
+    brachaHafrasha: BRACHA_HAFRASHA_STD,
+    brachaPidyon: BRACHA_PIDYON_STD,
+    terumaGedola: 'הָעוֹדֵף עַל אֶחָד מִמֵּאָה שֶׁבַּחֲתִיכָה שֶׁבְּיָדִי, הֲרֵי הוּא תְּרוּמָה גְּדוֹלָה.',
+    maaserRishon:
+      'אוֹתוֹ אֶחָד מִמֵּאָה שֶׁבְּיָדִי, וְעוֹד תִּשְׁעָה חֲלָקִים כְּמוֹתוֹ בַּפֵּירוֹת, הֲרֵי הֵם מַעֲשֵׂר רִאשׁוֹן.',
+    terumatMaaser: 'וְאוֹתוֹ אֶחָד מִמֵּאָה שֶׁבְּיָדִי, הֲרֵי הוּא תְּרוּמַת מַעֲשֵׂר.',
+    maaserSheniLocation: 'וּמַעֲשֵׂר שֵׁנִי שֶׁבַּפֵּירוֹת,',
+    maaserSheniChilul: 'מְחוּלָּל הוּא וְחוֹמְשׁוֹ עַל פְּרוּטָה שֶׁבַּמַּטְבֵּעַ שֶׁיִּחַדְתִּי לְחִילּוּל מַעֲשֵׂר שֵׁנִי.',
+    maaserSheniChilulPat: 'מְחוּלָּל הוּא וְחוֹמְשׁוֹ עַל הַפַּת הַזּוֹ שֶׁשָּׁוָה פְּרוּטָה.',
+    maaserAni: 'וּמַעֲשֵׂר עָנִי שֶׁבַּפֵּירוֹת.',
+    revaiChilul: 'אִם יֵשׁ כָּאן רְבָעִי, מְחוּלָּל הוּא וְחוֹמְשׁוֹ עַל פְּרוּטָה שֶׁבַּמַּטְבֵּעַ שֶׁיִּחַדְתִּי לְחִילּוּל.',
+    revaiChilulPat: 'אִם יֵשׁ כָּאן רְבָעִי, מְחוּלָּל הוּא וְחוֹמְשׁוֹ עַל הַפַּת הַזּוֹ שֶׁשָּׁוָה פְּרוּטָה.',
+    safekAniLine: 'וְאִם צָרִיךְ מַעֲשֵׂר עָנִי — מַעֲשֵׂר עָנִי שֶׁבַּפֵּירוֹת.',
   },
 }
 
-export const NUSACH_ORDER: NusachId[] = ['mekubal', 'mizrach', 'chazon-ish', 'temani', 'short']
+export const NUSACH_ORDER: NusachId[] = [
+  'mekubal',
+  'mizrach',
+  'chazon-ish',
+  'temani',
+  'short',
+  'no-directions',
+]

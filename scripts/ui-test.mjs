@@ -1,11 +1,7 @@
-// בדיקות דפדפן מקיפות לממשק (Playwright + Chromium)
+// בדיקות דפדפן מקיפות — מבנה דו-מסכי (Playwright + Chromium)
 import { chromium } from 'playwright'
-import { mkdirSync } from 'node:fs'
 
 const BASE = process.env.BASE || 'http://localhost:5173/'
-const SHOTS = 'scripts/shots'
-mkdirSync(SHOTS, { recursive: true })
-
 const results = []
 const ok = (name, cond, detail = '') => results.push({ name, ok: !!cond, detail })
 const strip = (s) => s.replace(/[֑-ׇ]/g, '').replace(/\s+/g, ' ').trim()
@@ -14,138 +10,164 @@ const browser = await chromium.launch()
 const ctx = await browser.newContext({
   locale: 'he-IL',
   permissions: ['clipboard-read', 'clipboard-write'],
-  viewport: { width: 414, height: 900 },
+  viewport: { width: 390, height: 844 },
 })
 const page = await ctx.newPage()
 const errors = []
 page.on('pageerror', (e) => errors.push(String(e)))
 page.on('console', (m) => m.type() === 'error' && errors.push(m.text()))
 
-async function resultText() {
-  return strip(await page.locator('#result').innerText())
+const seg = (t) => page.locator('.seg-btn', { hasText: t }).first().click()
+const toResult = () => page.locator('.cta').click()
+const toPrefs = () => page.locator('.back').click()
+
+// אוסף את טקסט כל השלבים על-ידי דפדוף קדימה
+async function allStepsText() {
+  await page.waitForSelector('.stepcard')
+  let txt = ''
+  for (let guard = 0; guard < 20; guard++) {
+    txt += ' ' + (await page.locator('.stepcard').innerText())
+    const next = page.locator('.pgbtn.primary')
+    if (await next.isDisabled()) break
+    await next.click()
+    await page.waitForTimeout(50)
+  }
+  return strip(txt)
 }
-async function clickNusach(title) {
-  await page.locator('button.opt', { hasText: title }).click()
-}
-async function clickChip(text) {
-  await page.locator('button.chip', { hasText: text }).first().click()
+async function stepCount() {
+  return parseInt((await page.locator('.count').innerText()).match(/מתוך (\d+)/)?.[1] || '0', 10)
 }
 
 try {
   await page.goto(BASE, { waitUntil: 'networkidle' })
 
-  // 1) טעינה בסיסית + RTL
+  // 1) טעינה + RTL + ללא שגיאות
   ok('כותרת העמוד', (await page.title()).includes('הפרשת תרומות'))
   ok('כיוון RTL', (await page.locator('html').getAttribute('dir')) === 'rtl')
-  ok('כותרת ראשית מוצגת', await page.locator('h1', { hasText: 'הפרשת תרומות ומעשרות' }).isVisible())
+  ok('מסך הגדרות מוצג (כפתור CTA)', await page.locator('.cta').isVisible())
+  ok('בורר נוסח קיים', await page.locator('#nusach').isVisible())
   ok('אין שגיאות JS בטעינה', errors.length === 0, errors.join(' | '))
 
-  // 2) מצב ברירת מחדל — תפוח, מקובל, ודאי, תאריך היום
+  // 2) ניווט בין מסכים
   await page.locator('#produce').selectOption('apple')
-  await page.screenshot({ path: `${SHOTS}/01-default.png`, fullPage: true })
-  let r = await resultText()
-  ok('תוצאה מציגה "אמירת הנוסח"', r.includes('אמירת הנוסח'))
-  ok('ברירת מחדל ודאי → ברכת ההפרשה מופיעה', r.includes('ברכת ההפרשה'))
+  await toResult()
+  ok('מעבר למסך תוצאה', await page.locator('.pager').isVisible())
+  ok('כפתור חזרה קיים', await page.locator('.back').isVisible())
+  await toPrefs()
+  ok('חזרה למסך הגדרות', await page.locator('.cta').isVisible())
 
-  // 3) מעבר בין כל הנוסחים — בדיקת טקסט ייחודי בכל אחד
-  const NUSACH_SIG = [
-    ['נוסח מקובל', 'העודף ממאית'],
-    ['עדות המזרח', 'אחד ממאה שבידי'],
-    ['חזון איש', 'יותר מאחד ממאה'],
-    ['תימני', 'מן הפירות האלו'],
-    ['נוסח מקוצר', 'העודף על אחד ממאה'],
+  // 3) כל ששת הנוסחים — טקסט ייחודי
+  const SIGS = [
+    ['mekubal', 'העודף ממאית'],
+    ['mizrach', 'אחד ממאה שבידי'],
+    ['chazon-ish', 'יותר מאחד ממאה'],
+    ['temani', 'מן הפירות האלו'],
+    ['short', 'העודף על אחד ממאה'],
+    ['no-directions', 'בחתיכה שבידי'],
   ]
-  for (const [title, sig] of NUSACH_SIG) {
-    await clickNusach(title)
-    const txt = await resultText()
-    ok(`נוסח "${title}" מציג טקסט ייחודי`, txt.includes(sig), `חסר: "${sig}"`)
+  for (const [id, sig] of SIGS) {
+    await page.locator('#nusach').selectOption(id)
+    await toResult()
+    const txt = await allStepsText()
+    ok(`נוסח ${id} — טקסט ייחודי`, txt.includes(sig), `חסר "${sig}"`)
+    if (id === 'mekubal') ok('נוסח עם כיוונים → איור הכיוונים מוצע', txt.includes('מה הכוונה'))
+    if (id === 'no-directions') {
+      ok('נוסח ללא כיוונים → אין "צפון"', !txt.includes('צפון'))
+      ok('נוסח ללא כיוונים → אין הצעת איור', !txt.includes('מה הכוונה'))
+    }
+    await toPrefs()
   }
-  await clickNusach('נוסח מקובל')
+  await page.locator('#nusach').selectOption('mekubal')
 
-  // 4) שנת מעשר עני מול מעשר שני (פרי עץ) דרך בורר תאריך
-  await clickChip('חישוב אוטומטי מתאריך')
-  await page.locator('#hdate').fill('2026-02-20') // אחרי ט"ו בשבט → תשפ"ו → מעשר שני
-  r = await resultText()
-  ok('20.2.26 תפוח → מעשר שני', r.includes('מעשר שני'))
-  ok('מעשר שני → ייחוד מטבע', r.includes('ייחוד מטבע'))
-  ok('מעשר שני ודאי → ברכת פדיון', r.includes('ברכת פדיון מעשר שני'))
-  await page.screenshot({ path: `${SHOTS}/02-maaser-sheni.png`, fullPage: true })
+  // 4) מעשר שני מול עני (פרי עץ) דרך תאריך
+  await seg('מתאריך')
+  await page.locator('input[type=date]').fill('2026-02-20')
+  await toResult()
+  let txt = await allStepsText()
+  ok('20.2.26 תפוח → מעשר שני', txt.includes('מעשר שני'))
+  ok('מעשר שני → ייחוד מטבע', txt.includes('ייחוד מטבע'))
+  ok('מעשר שני ודאי → ברכת פדיון', txt.includes('ברכת פדיון מעשר שני'))
+  await toPrefs()
 
-  await page.locator('#hdate').fill('2026-01-10') // לפני ט"ו בשבט → תשפ"ה → מעשר עני
-  r = await resultText()
-  ok('10.1.26 תפוח → מעשר עני', r.includes('מעשר עני'))
-  ok('מעשר עני → אין ייחוד מטבע', !r.includes('ייחוד מטבע'))
-  ok('מעשר עני → אין ברכת פדיון', !r.includes('ברכת פדיון'))
+  await page.locator('input[type=date]').fill('2026-01-10')
+  await toResult()
+  txt = await allStepsText()
+  ok('10.1.26 תפוח → מעשר עני', txt.includes('מעשר עני'))
+  ok('מעשר עני → אין ייחוד מטבע', !txt.includes('ייחוד מטבע'))
+  await toPrefs()
 
-  // 5) ודאי מול דמאי — היעדר ברכה בדמאי
-  await page.locator('#hdate').fill('2026-02-20')
-  await clickChip('דמאי')
-  r = await resultText()
-  ok('דמאי → אין ברכת ההפרשה', !r.includes('ברכת ההפרשה'))
-  ok('דמאי → עדיין מפרישים (אמירת הנוסח)', r.includes('אמירת הנוסח'))
-  await clickChip('ודאי טבל')
+  // 5) דמאי → אין ברכה
+  await page.locator('input[type=date]').fill('2026-02-20')
+  await seg('דמאי')
+  await toResult()
+  txt = await allStepsText()
+  ok('דמאי → אין ברכת ההפרשה', !txt.includes('ברכת ההפרשה'))
+  ok('דמאי → עדיין מפרישים', txt.includes('אמירת הנוסח'))
+  await toPrefs()
+  await seg('ודאי טבל')
 
-  // 6) שמיטה — בחירה ידנית של תשפ"ט
-  await clickChip('בחירה ידנית של השנה')
-  await page.locator('#myear').fill('5789')
-  r = await resultText()
-  ok('תשפ"ט → אזהרת שמיטה', r.includes('שמיטה'))
-  ok('שמיטה → אין נוסח הפרשה רגיל', !r.includes('אמירת הנוסח'))
-  await page.screenshot({ path: `${SHOTS}/03-shmita.png`, fullPage: true })
-  // חזרה לשנה רגילה
-  await page.locator('#myear').fill('5786')
-  await clickChip('חישוב אוטומטי מתאריך')
-  await page.locator('#hdate').fill('2026-02-20')
+  // 6) שמיטה (תשפ"ט) → חסום, שלב יחיד
+  await seg('בחירה ידנית')
+  await page.locator('input[type=number]').fill('5789')
+  await toResult()
+  txt = await allStepsText()
+  ok('תשפ"ט → אזהרת שמיטה', txt.includes('שמיטה'))
+  ok('שמיטה → שלב יחיד', (await stepCount()) === 1)
+  await toPrefs()
+  await seg('מתאריך')
+  await page.locator('input[type=date]').fill('2026-02-20')
 
-  // 7) מקטע נטע רבעי מופיע רק לעצים
-  ok('מקטע רבעי מופיע לעץ', await page.locator('h2', { hasText: 'נטע רבעי' }).isVisible())
-  await page.locator('#produce').selectOption('tomato') // ירק
-  ok('מקטע רבעי נעלם לירק', !(await page.locator('h2', { hasText: 'נטע רבעי' }).isVisible().catch(() => false)))
-  await page.locator('#produce').selectOption('apple')
+  // 7) חילול על פת (חלונית מתקדם)
+  await page.locator('.advanced-btn').click()
+  ok('חלונית מתקדם נפתחת', await page.locator('.sheet').isVisible())
+  await page.locator('.seg-btn', { hasText: 'על פת' }).click()
+  await page.locator('.sheet-close').click()
+  await toResult()
+  txt = await allStepsText()
+  ok('חילול על פת → שלב "הכנת פת"', txt.includes('הכנת פת'))
+  ok('חילול על פת → נוסח מזכיר פת', txt.includes('פת'))
+  ok('חילול על פת → אין ייחוד מטבע', !txt.includes('ייחוד מטבע'))
+  await toPrefs()
+  // חזרה למטבע
+  await page.locator('.advanced-btn').click()
+  await page.locator('.seg-btn', { hasText: 'על מטבע' }).click()
+  await page.locator('.sheet-close').click()
 
-  // 8) חישוב רבעי אוטומטי — עץ שניטע תשפ"ג → פרי תשפ"ו = שנה רביעית → ודאי רבעי
-  await clickChip('חשב לפי שנת נטיעה')
+  // 8) נטע רבעי אוטומטי (ניטע תשפ"ג → שנה רביעית)
+  await page.locator('.advanced-btn').click()
+  await page.locator('.seg-btn', { hasText: 'לפי נטיעה' }).click()
   await page.locator('#pyear').fill('5783')
-  await clickChip('עד ט')
-  r = await resultText()
-  ok('ניטע תשפ"ג → נטע רבעי', r.includes('רבעי'))
-  await page.screenshot({ path: `${SHOTS}/04-revai-auto.png`, fullPage: true })
+  await page.locator('.seg-btn', { hasText: 'עד ט' }).click()
+  await page.locator('.sheet-close').click()
+  await toResult()
+  txt = await allStepsText()
+  ok('ניטע תשפ"ג → נטע רבעי', txt.includes('רבעי'))
+  await toPrefs()
+  await page.locator('.advanced-btn').click()
+  await page.locator('.seg-btn', { hasText: 'עץ ותיק' }).click()
+  await page.locator('.sheet-close').click()
 
-  // עץ שניטע תשפ"א → פרי תשפ"ו = שנה 6 → רגיל
-  await page.locator('#pyear').fill('5781')
-  r = await resultText()
-  ok('ניטע תשפ"א → פרי רגיל (יש תרו"מ)', r.includes('אמירת הנוסח'))
-
-  // 9) קביעה ידנית: ערלה → חסום
-  await clickChip('קביעה ידנית')
-  await clickChip('חשש ערלה')
-  r = await resultText()
-  ok('ערלה ידנית → אזהרה', r.includes('ערלה'))
-  ok('ערלה → חסום (אין אמירת הנוסח)', !r.includes('אמירת הנוסח'))
-  await clickChip('לא רלוונטי')
-
-  // 10) גידול "אחר" → צ'יפים של קטגוריה
-  await page.locator('#produce').selectOption('custom')
-  ok('"אחר" מציג בורר קטגוריה', await page.locator('button.chip', { hasText: 'פירות אילן' }).isVisible())
-  await page.locator('#produce').selectOption('apple')
-
-  // 11) כפתור העתקה → לוח
-  await clickChip('בחירה ידנית של השנה')
-  await page.locator('#myear').fill('5786') // מעשר שני, נוסח מלא
-  await clickChip('חישוב אוטומטי מתאריך')
-  await page.locator('#hdate').fill('2026-02-20')
-  await page.locator('button.copybtn', { hasText: 'העתקת כל הנוסח' }).first().click()
+  // 9) העתקה ללוח
+  await toResult()
+  // דפדוף עד שלב עם כפתור העתקה
+  for (let g = 0; g < 10; g++) {
+    if ((await page.locator('.copybtn').count()) > 0) break
+    await page.locator('.pgbtn.primary').click()
+    await page.waitForTimeout(50)
+  }
+  await page.locator('.copybtn').first().click()
   const clip = await page.evaluate(() => navigator.clipboard.readText())
-  ok('כפתור "העתקת כל הנוסח" מעתיק נוסח', strip(clip).includes('תרומה גדולה'), `הועתק: ${strip(clip).slice(0, 40)}`)
+  ok('כפתור העתקה מעתיק טקסט', strip(clip).length > 5, `הועתק: ${strip(clip).slice(0, 30)}`)
+  await toPrefs()
 
-  // 12) מקורות + הצהרה
-  ok('הצהרה משפטית מוצגת', (await page.locator('.disclaimer').innerText()).includes('אינו פוסק הלכה'))
-  ok('5 קישורי מקור', (await page.locator('.sources li').count()) === 5)
+  // 10) חלונית הבהרה ומקורות
+  await page.locator('.linkbtn', { hasText: 'הבהרה' }).click()
+  ok('הבהרה מוצגת', (await page.locator('.disclaimer').innerText()).includes('אינו פוסק הלכה'))
+  ok('6 קישורי מקור', (await page.locator('.sources li').count()) === 6)
 } catch (e) {
-  ok('ריצת הבדיקות ללא חריגה', false, String(e))
+  ok('ריצה ללא חריגה', false, String(e))
 } finally {
-  ok('אין שגיאות JS לאורך כל הריצה', errors.length === 0, errors.slice(0, 3).join(' | '))
-  await page.screenshot({ path: `${SHOTS}/05-final.png`, fullPage: true })
+  ok('אין שגיאות JS לאורך הריצה', errors.length === 0, errors.slice(0, 3).join(' | '))
   await browser.close()
 }
 

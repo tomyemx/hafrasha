@@ -1,7 +1,7 @@
 // ===== טיפוסי הליבה של מנוע ההפרשה =====
 
 /** מזהי הנוסחים הנתמכים */
-export type NusachId = 'mekubal' | 'mizrach' | 'chazon-ish' | 'temani' | 'short'
+export type NusachId = 'mekubal' | 'mizrach' | 'chazon-ish' | 'temani' | 'short' | 'no-directions'
 
 /**
  * קטגוריית הגידול — קובעת את גבול שנת המעשר:
@@ -12,6 +12,13 @@ export type ProduceCategory = 'tree' | 'vegetable' | 'grain' | 'legume' | 'etrog
 
 /** ודאי טבל (חייב ברכה) או ספק/דמאי (ללא ברכה) */
 export type Certainty = 'vadai' | 'demai'
+
+/**
+ * אופן חילול מעשר שני / רבעי:
+ *  - coin = על מטבע (לכתחילה)
+ *  - pat  = על פת או מאכל ששווה פרוטה, שמושמד בכבוד
+ */
+export type ChilulMethod = 'coin' | 'pat'
 
 /** סוג המעשר השני בשנה זו */
 export type MaaserKind = 'sheni' | 'ani' | 'shmita'
@@ -48,6 +55,8 @@ export interface Scenario {
   certainty: Certainty
   maaser: MaaserYearResult
   revai: RevaiStatus
-  /** האם נדרש חילול על מטבע (מעשר שני או רבעי) */
+  /** אופן החילול שנבחר (מטבע/פת) */
+  chilulMethod: ChilulMethod
+  /** האם נדרש חילול בכלל (מעשר שני או רבעי) */
   needsCoin: boolean
 }

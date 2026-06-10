@@ -29,16 +29,30 @@ const COIN_INSTRUCTIONS =
   'בכל הפרשה מעבירים את הקדושה אל חלק קטן מערך המטבע (שווה פרוטה). אפשר להמשיך להשתמש באותה מטבע פעמים רבות, ' +
   'עד שכמעט "מתמלאת"; אז מחללים את כל ערכה על פרי/חתיכת סוכר ששווה פרוטה, מאבדים אותה בכבוד, וממשיכים מחדש.'
 
+const PAT_INSTRUCTIONS =
+  'הכינו חתיכת פת (או מאכל אחר) ששווה לפחות פרוטה — היא תשמש לחילול. ' +
+  'שימו לב: לאחר אמירת הנוסח הפת עצמה הופכת למעשר שני — אין לאכול אותה, אלא לעטוף ולהשליך בכבוד (כמו התרומה). ' +
+  'חילול על פת מתאים בעיקר לכמות ביתית קטנה (כששווי מעשר שני אינו עולה על פרוטה); לכתחילה עדיף לחלל על מטבע כסף.'
+
 const DISPOSAL_INSTRUCTIONS =
   'החלק שהופרש לתרומה גדולה ולתרומת מעשר (מעט יותר ממאית) קדוש ואסור באכילה ובהנאה. ' +
   'עטפו אותו (למשל בשקית) והשליכו לאשפה בכבוד. שאר הפירות מותרים כעת באכילה.'
+
+function sheniChilulText(scn: Scenario): string {
+  const t = NUSACHIM[scn.nusachId]
+  return scn.chilulMethod === 'pat' ? t.maaserSheniChilulPat : t.maaserSheniChilul
+}
+function revaiChilulText(scn: Scenario): string {
+  const t = NUSACHIM[scn.nusachId]
+  return scn.chilulMethod === 'pat' ? t.revaiChilulPat : t.revaiChilul
+}
 
 function buildDeclaration(scn: Scenario): string {
   const t = NUSACHIM[scn.nusachId]
   const parts: string[] = [t.terumaGedola, t.maaserRishon, t.terumatMaaser]
 
   if (scn.maaser.kind === 'sheni') {
-    parts.push(t.maaserSheniLocation, t.maaserSheniChilul)
+    parts.push(t.maaserSheniLocation, sheniChilulText(scn))
     if (scn.certainty === 'demai') {
       // בדמאי מוסיפים את אפשרות מעשר עני מספק
       parts.push(t.safekAniLine)
@@ -48,10 +62,17 @@ function buildDeclaration(scn: Scenario): string {
   }
 
   if (scn.revai === 'vadai' || scn.revai === 'safek') {
-    parts.push(t.revaiChilul)
+    parts.push(revaiChilulText(scn))
   }
 
   return parts.join('\n')
+}
+
+/** שלב הכנת אמצעי החילול (מטבע או פת) */
+function chilulPrepStep(scn: Scenario): Omit<Step, 'n'> {
+  return scn.chilulMethod === 'pat'
+    ? { kind: 'action', title: 'הכנת פת לחילול', body: PAT_INSTRUCTIONS }
+    : { kind: 'action', title: 'ייחוד מטבע לחילול', body: COIN_INSTRUCTIONS }
 }
 
 export function generatePlan(scn: Scenario): GeneratedPlan {
@@ -107,24 +128,25 @@ export function generatePlan(scn: Scenario): GeneratedPlan {
       body:
         'הפרי הוא נטע רבעי (שנה רביעית לעץ): כל הפרי קודש ואין מפרישים ממנו תרומות ומעשרות, אלא פודים את כולו על מטבע.',
     })
-    push({ kind: 'action', title: 'ייחוד מטבע לחילול', body: COIN_INSTRUCTIONS })
+    push(chilulPrepStep(scn))
     push({
       kind: 'declaration',
       title: 'אמירת נוסח הפדיון',
       body: 'אִמרו את נוסח חילול הרבעי:',
-      say: t.revaiChilul,
+      say: revaiChilulText(scn),
     })
     push({
       kind: 'done',
       title: 'סיום',
       body:
-        'לאחר הפדיון הפרי מותר באכילה. הקדושה עברה אל המטבע. ' +
+        'לאחר הפדיון הפרי מותר באכילה. הקדושה עברה אל ' +
+        (scn.chilulMethod === 'pat' ? 'הפת (שתושמד בכבוד). ' : 'המטבע. ') +
         '(יש הנוהגים לברך "על פדיון נטע רבעי" — היוועצו ברב לגבי מנהגכם.)',
     })
     return {
       steps,
-      fullNusach: t.revaiChilul,
-      summary: ['נטע רבעי ודאי', 'פדיון מלא על מטבע'],
+      fullNusach: revaiChilulText(scn),
+      summary: ['נטע רבעי ודאי', scn.chilulMethod === 'pat' ? 'פדיון על פת' : 'פדיון מלא על מטבע'],
     }
   }
 
@@ -138,15 +160,16 @@ export function generatePlan(scn: Scenario): GeneratedPlan {
     title: 'הכנה',
     body:
       'הניחו את כל הפירות לפניכם. קחו ביד חתיכה אחת בגודל מעט יותר ממאית מכמות הפירות (קצת יותר מאחוז אחד) — ' +
-      'חתיכה זו תשמש לתרומה גדולה ולתרומת מעשר. רצוי שתהיה בצד צפון/עליון של הפירות.' +
+      'חתיכה זו תשמש לתרומה גדולה ולתרומת מעשר.' +
+      (t.usesDirections ? ' רצוי שתהיה בצד צפון/עליון של הפירות.' : ' ניתן להחזיקהּ ביד בזמן אמירת הנוסח.') +
       (scn.certainty === 'demai'
         ? ' מכיוון שאינכם בטוחים שלא עושרו (דמאי/ספק) — מפרישים אך אין מברכים.'
         : ''),
   })
 
-  // 2) ייחוד מטבע (אם צריך חילול)
+  // 2) הכנת אמצעי החילול (מטבע או פת)
   if (scn.needsCoin) {
-    push({ kind: 'action', title: 'ייחוד מטבע לחילול', body: COIN_INSTRUCTIONS })
+    push(chilulPrepStep(scn))
   }
 
   // 3) ברכת ההפרשה (רק בוודאי)
@@ -167,7 +190,11 @@ export function generatePlan(scn: Scenario): GeneratedPlan {
     push({
       kind: 'bracha',
       title: 'ברכת פדיון מעשר שני',
-      body: 'בשנת מעשר שני, לפני אמירת החילול (אם לא נכלל לעיל), ברכו:',
+      body:
+        'בשנת מעשר שני, לפני אמירת החילול (אם לא נכלל לעיל), ברכו:' +
+        (scn.chilulMethod === 'pat'
+          ? ' (כשמחללים על פת/מאכל — יש המשנים או משמיטים ברכה זו, ובפרט בעדות המזרח; היוועצו ברב.)'
+          : ''),
       say: t.brachaPidyon,
     })
   }
@@ -180,7 +207,7 @@ export function generatePlan(scn: Scenario): GeneratedPlan {
   summary.push(scn.maaser.kind === 'sheni' ? 'מעשר שני' : 'מעשר עני')
   summary.push(scn.certainty === 'vadai' ? 'ודאי טבל — עם ברכה' : 'דמאי/ספק — בלי ברכה')
   if (scn.revai === 'safek') summary.push('ספק רבעי')
-  if (scn.needsCoin) summary.push('חילול על מטבע')
+  if (scn.needsCoin) summary.push(scn.chilulMethod === 'pat' ? 'חילול על פת' : 'חילול על מטבע')
 
   return { steps, fullNusach: decl, summary }
 }
