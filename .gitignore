@@ -9,3 +9,8 @@ _research_*.txt
 _research_*.pdf
 scripts/shots
 scripts/visual
+
+# Vercel / סודות
+.vercel
+.env
+.env.*
